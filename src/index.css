@@ -1,0 +1,143 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Luxury Stone & Granite Design System
+   Palette: Obsidian black, ivory white, royal gold
+   All colors in HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 40 20% 97%;
+    --foreground: 0 0% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 8%;
+
+    /* Royal gold */
+    --primary: 42 60% 52%;
+    --primary-foreground: 0 0% 8%;
+    --primary-glow: 45 80% 65%;
+    --primary-deep: 38 65% 38%;
+
+    --secondary: 0 0% 8%;
+    --secondary-foreground: 42 60% 70%;
+
+    --muted: 40 15% 92%;
+    --muted-foreground: 0 0% 35%;
+
+    --accent: 42 50% 88%;
+    --accent-foreground: 0 0% 8%;
+
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 40 20% 85%;
+    --input: 40 20% 88%;
+    --ring: 42 60% 52%;
+
+    --radius: 0.25rem;
+
+    /* Luxury gradients */
+    --gradient-gold: linear-gradient(135deg, hsl(38 65% 45%) 0%, hsl(45 80% 65%) 50%, hsl(38 65% 45%) 100%);
+    --gradient-gold-soft: linear-gradient(135deg, hsl(42 60% 52% / 0.9), hsl(45 80% 65% / 0.7));
+    --gradient-dark: linear-gradient(180deg, hsl(0 0% 4%) 0%, hsl(0 0% 12%) 100%);
+    --gradient-overlay: linear-gradient(180deg, hsl(0 0% 0% / 0.3) 0%, hsl(0 0% 0% / 0.75) 100%);
+    --gradient-shine: linear-gradient(110deg, transparent 30%, hsl(45 80% 75% / 0.4) 50%, transparent 70%);
+
+    /* Shadows */
+    --shadow-luxury: 0 20px 60px -15px hsl(42 60% 30% / 0.35);
+    --shadow-gold-glow: 0 0 40px hsl(45 80% 65% / 0.4);
+    --shadow-deep: 0 30px 80px -20px hsl(0 0% 0% / 0.5);
+    --shadow-card: 0 10px 30px -10px hsl(0 0% 0% / 0.15);
+
+    /* Transitions */
+    --transition-luxury: cubic-bezier(0.22, 1, 0.36, 1);
+    --transition-smooth: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .dark {
+    --background: 0 0% 5%;
+    --foreground: 40 20% 95%;
+    --card: 0 0% 8%;
+    --card-foreground: 40 20% 95%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 40 20% 95%;
+    --primary: 45 80% 60%;
+    --primary-foreground: 0 0% 8%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 42 60% 70%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 40 10% 65%;
+    --accent: 0 0% 14%;
+    --accent-foreground: 42 60% 70%;
+    --border: 0 0% 18%;
+    --input: 0 0% 14%;
+    --ring: 45 80% 60%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  html { scroll-behavior: smooth; }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "ss01", "cv01";
+  }
+  h1, h2, h3, h4, h5 { @apply font-serif tracking-tight; }
+}
+
+@layer utilities {
+  .text-gold-gradient {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .bg-gold-gradient { background: var(--gradient-gold); }
+  .bg-dark-gradient { background: var(--gradient-dark); }
+  .shadow-luxury { box-shadow: var(--shadow-luxury); }
+  .shadow-gold-glow { box-shadow: var(--shadow-gold-glow); }
+  .shadow-deep { box-shadow: var(--shadow-deep); }
+  .shadow-card-luxury { box-shadow: var(--shadow-card); }
+
+  /* Gold underline link */
+  .link-gold {
+    @apply relative inline-block;
+  }
+  .link-gold::after {
+    content: '';
+    @apply absolute left-0 -bottom-1 h-px w-full origin-right scale-x-0 bg-gold-gradient transition-transform duration-500;
+  }
+  .link-gold:hover::after { @apply origin-left scale-x-100; }
+
+  /* Shimmer */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--gradient-shine);
+    transform: translateX(-100%);
+    transition: transform 0.8s var(--transition-luxury);
+  }
+  .shimmer:hover::before { transform: translateX(100%); }
+
+  /* Image zoom on hover */
+  .img-zoom { @apply overflow-hidden; }
+  .img-zoom img { @apply transition-transform ease-out; transition-duration: 1200ms; }
+  .img-zoom:hover img { @apply scale-110; }
+
+  /* Reveal on scroll */
+  .reveal { opacity: 0; transform: translateY(40px); transition: opacity 1s var(--transition-luxury), transform 1s var(--transition-luxury); }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+}
