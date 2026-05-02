@@ -320,15 +320,25 @@ const ReviewsAdmin = () => <SimpleCrud
   table="reviews" orderBy="created_at" desc
   columns={[
     { k: "author_name", label: "Author" },
+    { k: "author_email", label: "Email" },
     { k: "author_role", label: "Role" },
-    { k: "rating", label: "Rating", type: "number" },
+    { k: "rating", label: "Rating", type: "number", min: 1, max: 5 },
   ]}
   textareas={[{ k: "content", label: "Review content" }]}
   imageField="avatar_url"
-  display={(r) => <div className="flex-1"><div className="font-medium">{r.author_name} · {"★".repeat(r.rating)}</div><div className="text-xs text-foreground/50 truncate">{r.content}</div></div>}
+  display={(r) => (
+    <>
+      <img src={r.avatar_url || "/placeholder.svg"} className="h-12 w-12 object-cover bg-muted rounded-full" />
+      <div className="flex-1 min-w-0">
+        <div className="font-medium">{r.author_name} · {"★".repeat(Math.min(5, Math.max(1, Number(r.rating) || 5)))}</div>
+        {r.author_email && <div className="text-xs text-foreground/50 truncate">{r.author_email}</div>}
+        <div className="text-xs text-foreground/50 truncate">{r.content}</div>
+      </div>
+    </>
+  )}
 />;
 
-type Col = { k: string; label: string; type?: "text" | "number" };
+type Col = { k: string; label: string; type?: "text" | "number"; min?: number; max?: number };
 const SimpleCrud = ({ table, columns, textareas = [], imageField, orderBy, desc, display }:
   { table: string; columns: Col[]; textareas?: { k: string; label: string }[]; imageField?: string; orderBy: string; desc?: boolean; display: (r: any) => React.ReactNode }) => {
   const [items, setItems] = useState<any[]>([]);
@@ -343,7 +353,12 @@ const SimpleCrud = ({ table, columns, textareas = [], imageField, orderBy, desc,
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = { ...editing };
-    columns.forEach((c) => { if (c.type === "number" && payload[c.k] !== "" && payload[c.k] != null) payload[c.k] = Number(payload[c.k]); });
+    columns.forEach((c) => {
+      if (c.type === "number" && payload[c.k] !== "" && payload[c.k] != null) {
+        const value = Number(payload[c.k]);
+        payload[c.k] = Math.min(c.max ?? value, Math.max(c.min ?? value, value));
+      }
+    });
     try {
       if (payload.id) await adminApi.update(table, payload.id, payload);
       else await adminApi.create(table, payload);
@@ -383,7 +398,7 @@ const SimpleCrud = ({ table, columns, textareas = [], imageField, orderBy, desc,
           <form onSubmit={save} className="space-y-4">
             {columns.map((c) => (
               <Field key={c.k} label={c.label}>
-                <input type={c.type || "text"} className={inputCls} value={editing[c.k] ?? ""} onChange={(e) => setEditing({ ...editing, [c.k]: e.target.value })} />
+                <input type={c.type || "text"} min={c.min} max={c.max} className={inputCls} value={editing[c.k] ?? ""} onChange={(e) => setEditing({ ...editing, [c.k]: e.target.value })} />
               </Field>
             ))}
             {textareas.map((t) => (
@@ -441,6 +456,9 @@ const InquiriesAdmin = () => {
 const HeroImagesAdmin = () => {
   const [items, setItems] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
+  const bulkRef = useRef<HTMLInputElement>(null);
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const maxHeroImages = 6;
 
   const load = async () => {
     const data = await adminApi.list("hero_images", { orderBy: "sort_order" });
@@ -475,18 +493,75 @@ const HeroImagesAdmin = () => {
     }
   };
 
+  const uploadMany = async (files: FileList | null) => {
+    const selected = Array.from(files || []).filter((file) => file.type.startsWith("image/"));
+    if (selected.length === 0) {
+      toast.error("Please choose image files");
+      return;
+    }
+
+    const remaining = maxHeroImages - items.length;
+    if (remaining <= 0) {
+      toast.error(`You can keep up to ${maxHeroImages} carousel images`);
+      return;
+    }
+
+    const filesToUpload = selected.slice(0, remaining);
+    if (selected.length > remaining) {
+      toast.message(`Only ${remaining} more image${remaining === 1 ? "" : "s"} can be added`);
+    }
+
+    setBulkUploading(true);
+    try {
+      for (let index = 0; index < filesToUpload.length; index += 1) {
+        const { url } = await adminApi.upload(filesToUpload[index]);
+        await adminApi.create("hero_images", {
+          image_url: url,
+          caption: null,
+          sort_order: items.length + index + 1,
+        });
+      }
+      toast.success(`${filesToUpload.length} carousel image${filesToUpload.length === 1 ? "" : "s"} uploaded`);
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Upload failed");
+    } finally {
+      setBulkUploading(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
         <p className="text-xs text-foreground/60">
-          Recommended: 5 images for the homepage carousel ({items.length} added)
+          Recommended: 5-6 images for the homepage carousel ({items.length} added)
         </p>
-        <button
-          onClick={() => setEditing({ image_url: "", caption: "", sort_order: items.length + 1 })}
-          disabled={items.length >= 10}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-gold-gradient text-primary-foreground text-[10px] uppercase tracking-[0.22em] disabled:opacity-50">
-          <Plus className="h-3.5 w-3.5" /> New Hero Image
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <input
+            ref={bulkRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={(e) => {
+              void uploadMany(e.target.files);
+              e.currentTarget.value = "";
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => bulkRef.current?.click()}
+            disabled={bulkUploading || items.length >= maxHeroImages}
+            className="inline-flex items-center gap-2 px-4 py-2 border border-foreground/15 text-[10px] uppercase tracking-[0.22em] hover:border-primary hover:text-primary transition-colors disabled:opacity-50">
+            <Upload className="h-3.5 w-3.5" /> {bulkUploading ? "Uploading..." : "Upload 5-6 Images"}
+          </button>
+          <button
+            onClick={() => setEditing({ image_url: "", caption: "", sort_order: items.length + 1 })}
+            disabled={items.length >= maxHeroImages}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gold-gradient text-primary-foreground text-[10px] uppercase tracking-[0.22em] disabled:opacity-50">
+            <Plus className="h-3.5 w-3.5" /> New Hero Image
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

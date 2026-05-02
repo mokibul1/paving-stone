@@ -10,8 +10,7 @@ Ei project ta ekhon React.js frontend, Node.js + Express.js backend, aar MongoDB
 - Product, category, variant, hero image, workflow, reviews, inquiries, settings shob MongoDB collection-e save hobe.
 - Admin panel theke create, edit, delete, image upload kora jabe.
 - Login/signup ekhon backend JWT auth diye kaj kore.
-- Prothom signup kora user automatic admin hobe.
-- Product price/admin price field Indian rupee format-er jonno rakha hoyeche, example: `₹2,500 / sq ft`.
+- Prothom signup kora user automatic admin hobe
 - README ta easy Bangla style-e sajano hoyeche.
 
 ## Folder Structure

@@ -70,6 +70,13 @@ export const publicApi = {
   },
   submitInquiry: (payload: any) =>
     request("/inquiries", { method: "POST", body: JSON.stringify(payload) }),
+  submitReview: (payload: any) =>
+    request("/reviews", { method: "POST", body: JSON.stringify(payload), auth: true }),
+  uploadReviewImage: (file: File) => {
+    const body = new FormData();
+    body.append("image", file);
+    return request<{ url: string }>("/review-upload", { method: "POST", body, auth: true });
+  },
 };
 
 export const adminApi = {

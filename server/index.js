@@ -96,7 +96,9 @@ const WorkflowStep = mongoose.model("WorkflowStep", new mongoose.Schema({
 }, commonOptions));
 
 const Review = mongoose.model("Review", new mongoose.Schema({
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   author_name: { type: String, required: true },
+  author_email: String,
   author_role: String,
   rating: { type: Number, default: 5, min: 1, max: 5 },
   content: { type: String, required: true },
@@ -161,6 +163,7 @@ const tableConfig = {
 
 const asId = (id) => mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id;
 const clean = (value) => value === "" ? null : value;
+const clampRating = (value) => Math.min(5, Math.max(1, Number(value) || 5));
 const cleanPayload = (payload = {}) => Object.fromEntries(
   Object.entries(payload)
     .filter(([key]) => !["id", "_id", "__v", "created_at", "updated_at", "categories", "products"].includes(key))
@@ -385,6 +388,25 @@ app.post("/api/inquiries", asyncHandler(async (req, res) => {
   res.status(201).json(doc.toJSON());
 }));
 
+app.post("/api/reviews", auth, asyncHandler(async (req, res) => {
+  const content = String(req.body.content || "").trim();
+  if (content.length < 10 || content.length > 1000) {
+    return res.status(400).json({ error: "Please write a review between 10 and 1000 characters." });
+  }
+
+  const doc = await Review.create({
+    user_id: req.user._id,
+    author_name: req.user.full_name || req.user.email.split("@")[0],
+    author_email: req.user.email,
+    author_role: "Customer",
+    rating: clampRating(req.body.rating),
+    content,
+    avatar_url: clean(req.body.avatar_url),
+    featured: true,
+  });
+  res.status(201).json(doc.toJSON());
+}));
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),
   filename: (_req, file, cb) => {
@@ -407,11 +429,17 @@ app.post("/api/admin/upload", auth, adminOnly, upload.single("image"), (req, res
   res.status(201).json({ url: `/uploads/${req.file.filename}` });
 });
 
+app.post("/api/review-upload", auth, upload.single("image"), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "Image file is required." });
+  res.status(201).json({ url: `/uploads/${req.file.filename}` });
+});
+
 app.post("/api/admin/:table", auth, adminOnly, asyncHandler(async (req, res) => {
   const { table } = req.params;
   const Model = models[table];
   if (!Model) return res.status(404).json({ error: "Not found." });
   const payload = cleanPayload(req.body);
+  if (table === "reviews") payload.rating = clampRating(payload.rating);
   if (table === "site_settings") {
     const doc = await SiteSetting.findByIdAndUpdate("main", payload, { new: true, upsert: true });
     return res.json(doc.toJSON());
@@ -425,6 +453,7 @@ app.put("/api/admin/:table/:id", auth, adminOnly, asyncHandler(async (req, res) 
   const Model = models[table];
   if (!Model) return res.status(404).json({ error: "Not found." });
   const payload = cleanPayload(req.body);
+  if (table === "reviews") payload.rating = clampRating(payload.rating);
   const doc = await Model.findByIdAndUpdate(id === "main" ? "main" : asId(id), payload, { new: true, runValidators: true });
   if (!doc) return res.status(404).json({ error: "Record not found." });
   res.json(doc.toJSON());
