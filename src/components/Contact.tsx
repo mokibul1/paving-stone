@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { SectionHeading } from "./SectionHeading";
-import { MapPin, Phone, Mail, Clock, Send } from "lucide-react";
+import { MapPin, MessageCircle, Mail, Clock, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { publicApi } from "@/lib/api";
 import { z } from "zod";
@@ -83,7 +83,7 @@ export const Contact = () => {
             <div className="mt-10 space-y-6">
               {[
                 { icon: MapPin, label: "Atelier", value: "India" },
-                { icon: Phone, label: "Direct Line / WhatsApp", value: "+91 82172 57354" },
+                { icon: MessageCircle, label: "WhatsApp", value: "+91 82172 57354" },
                 { icon: Mail, label: "Email", value: "granitepavingstone@gmail.com" },
                 { icon: Clock, label: "Hours", value: "Mon–Sat · 9am – 7pm" },
               ].map((info) => (

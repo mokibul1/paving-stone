@@ -1,10 +1,22 @@
 import { useEffect, useState } from "react";
 import heroImg from "@/assets/hero-parking.jpg";
+import benchImg from "@/assets/product-bench.jpg";
+import chairImg from "@/assets/product-chair.jpg";
+import flooringImg from "@/assets/product-flooring.jpg";
+import parkingImg from "@/assets/product-parking.jpg";
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { publicApi } from "@/lib/api";
 
 type Slide = { id: string; image_url: string; caption: string | null };
+
+const defaultSlides: Slide[] = [
+  { id: "default-parking", image_url: heroImg, caption: "Luxury granite parking design" },
+  { id: "default-bench", image_url: benchImg, caption: "Granite garden bench" },
+  { id: "default-chair", image_url: chairImg, caption: "Granite outdoor chair" },
+  { id: "default-flooring", image_url: flooringImg, caption: "Decorative granite flooring" },
+  { id: "default-paving", image_url: parkingImg, caption: "Outdoor stone paving" },
+];
 
 export const Hero = () => {
   const [slides, setSlides] = useState<Slide[]>([]);
@@ -14,13 +26,11 @@ export const Hero = () => {
     publicApi.list<Slide>("hero_images", { orderBy: "sort_order" }).then(setSlides).catch(() => undefined);
   }, []);
 
-  const items: Slide[] = slides.length
-    ? slides
-    : [{ id: "default", image_url: heroImg, caption: null }];
+  const items: Slide[] = slides.length ? slides : defaultSlides;
 
   useEffect(() => {
     if (items.length < 2) return;
-    const t = setInterval(() => setIdx((i) => (i + 1) % items.length), 5000);
+    const t = setInterval(() => setIdx((i) => (i + 1) % items.length), 7500);
     return () => clearInterval(t);
   }, [items.length]);
 
@@ -38,7 +48,7 @@ export const Hero = () => {
             alt={s.caption || "Luxury granite stone showcase"}
             width={1920}
             height={1088}
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${i === idx ? "opacity-100 animate-ken-burns" : "opacity-0"}`}
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity [transition-duration:2000ms] ease-in-out ${i === idx ? "opacity-100 animate-ken-burns" : "opacity-0"}`}
           />
         ))}
         <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(0_0%_0%/0.55)_0%,hsl(0_0%_0%/0.3)_40%,hsl(0_0%_0%/0.85)_100%)]" />

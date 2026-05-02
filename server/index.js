@@ -6,6 +6,7 @@ import multer from "multer";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import nodemailer from "nodemailer";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -21,6 +22,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || "change-this-secret-before-live";
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:8080";
+const INQUIRY_RECIPIENT_EMAIL = process.env.INQUIRY_RECIPIENT_EMAIL || "granitepavingstone@gmail.com";
+const SMTP_FROM = process.env.SMTP_FROM || `SJ Enterprises <${INQUIRY_RECIPIENT_EMAIL}>`;
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "")
   .split(",")
   .map((email) => email.trim().toLowerCase())
@@ -171,6 +174,61 @@ const signToken = (user) => jwt.sign(
 );
 
 const hashResetToken = (token) => crypto.createHash("sha256").update(token).digest("hex");
+const escapeHtml = (value = "") => String(value)
+  .replace(/&/g, "&amp;")
+  .replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;")
+  .replace(/"/g, "&quot;")
+  .replace(/'/g, "&#39;");
+
+const createMailer = () => {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) return null;
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: process.env.SMTP_SECURE === "true",
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+};
+
+const sendInquiryEmail = async (inquiry) => {
+  const mailer = createMailer();
+  if (!mailer) {
+    console.warn("Inquiry email was not sent because SMTP settings are missing.");
+    return;
+  }
+
+  const subject = inquiry.subject ? `New inquiry: ${inquiry.subject}` : "New website inquiry";
+  const rows = [
+    ["Name", inquiry.name],
+    ["Email", inquiry.email],
+    ["Phone", inquiry.phone || "Not provided"],
+    ["Interested Product", inquiry.subject || "Not provided"],
+    ["Message", inquiry.message],
+  ];
+
+  await mailer.sendMail({
+    from: SMTP_FROM,
+    to: INQUIRY_RECIPIENT_EMAIL,
+    replyTo: inquiry.email,
+    subject,
+    text: rows.map(([label, value]) => `${label}: ${value}`).join("\n\n"),
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.55;color:#222">
+        <h2 style="margin:0 0 16px">New website inquiry</h2>
+        ${rows.map(([label, value]) => `
+          <p style="margin:0 0 12px">
+            <strong>${escapeHtml(label)}:</strong><br />
+            ${escapeHtml(value).replace(/\n/g, "<br />")}
+          </p>
+        `).join("")}
+      </div>
+    `,
+  });
+};
 
 const auth = async (req, res, next) => {
   const header = req.headers.authorization || "";
@@ -321,6 +379,9 @@ app.post("/api/inquiries", asyncHandler(async (req, res) => {
     return res.status(400).json({ error: "Name, email, and message are required." });
   }
   const doc = await Inquiry.create(payload);
+  await sendInquiryEmail(doc.toJSON()).catch((error) => {
+    console.error("Failed to send inquiry email:", error);
+  });
   res.status(201).json(doc.toJSON());
 }));
 

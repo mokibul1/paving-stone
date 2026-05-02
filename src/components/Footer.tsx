@@ -46,14 +46,14 @@ export const Footer = () => {
           <div className="text-[10px] uppercase tracking-[0.3em] text-primary mb-5">Contact</div>
           <ul className="space-y-3 text-sm text-secondary-foreground/80">
             <li>India</li>
-            <li>+91 82172 57354 (Call / WhatsApp)</li>
+            <li>+91 82172 57354 (WhatsApp)</li>
             <li>granitepavingstone@gmail.com</li>
           </ul>
         </div>
       </div>
       <div className="border-t border-primary/10">
         <div className="container py-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-secondary-foreground/50">
-          <div>© {new Date().getFullYear()} Marbella Stone Co. · All rights reserved.</div>
+          <div>© {new Date().getFullYear()} SJ Enterprises. All rights reserved.</div>
           <div>Crafted with reverence for stone.</div>
         </div>
       </div>
