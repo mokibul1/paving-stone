@@ -30,7 +30,7 @@ export const Hero = () => {
 
   useEffect(() => {
     if (items.length < 2) return;
-    const t = setInterval(() => setIdx((i) => (i + 1) % items.length), 7500);
+    const t = setInterval(() => setIdx((i) => (i + 1) % items.length), 2500);
     return () => clearInterval(t);
   }, [items.length]);
 
